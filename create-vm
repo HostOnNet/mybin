@@ -14,7 +14,6 @@ function usage {
     echo "  -m          Memory Size (MB)    (default: 1024)"
     echo "  -d          Disk Size (GB)      (default: 10)"
     echo "  -t          Linux Distribution  (default: centos7)"
-    echo "  -l          Location of Images  (default: $HOME/virt/images)"
     echo "  -k          SSH Public Key      (default: $HOME/.ssh/id_rsa.pub)"
     echo "  -b          Bridge              (default: virbr0)"
     echo "  -h          Display help"
@@ -64,13 +63,12 @@ MACADDRESS=                     # MAC Address
 # Parse command line arguments
 #--------------------------------------------------
 
-while getopts ":c:f:m:d:t:l:k:b:n:r:i:M:h" opt; do
+while getopts ":c:f:m:d:t:k:b:n:r:i:M:h" opt; do
     case "$opt" in
         c   ) CPUS="${OPTARG}" ;;
         f   ) FEATURE="${OPTARG}" ;;
         m   ) MEMORY="${OPTARG}" ;;
         t   ) DISTRO="${OPTARG}" ;;
-        l   ) IMAGEDIR="${OPTARG}" ;;
         n   ) VMNAME="${OPTARG}" ;;
         k   ) PUBKEY="${OPTARG}" ;;
         b   ) BRIDGE="${OPTARG}" ;;

@@ -13,7 +13,7 @@ function usage {
     echo "  -f          CPU Model / Feature (default: host)"
     echo "  -m          Memory Size (MB)    (default: 1024)"
     echo "  -d          Disk Size (GB)      (default: 10)"
-    echo "  -t          Linux Distribution  (default: centos7)"
+    echo "  -t          Linux Distribution  (default: ubuntu)"
     echo "  -k          SSH Public Key      (default: $HOME/.ssh/id_rsa.pub)"
     echo "  -b          Bridge              (default: virbr0)"
     echo "  -h          Display help"
@@ -25,7 +25,7 @@ function usage {
     echo "DISTRIBUTIONS"
     echo " - centos7"
     echo " - centos6"
-    echo " - ubuntu1604"
+    echo " - ubuntu"
     echo ""
     echo "EXAMPLES"
     echo ""
@@ -54,7 +54,7 @@ DISK_SIZE=10                    # Disk Size in GB
 RESIZE_DISK=false               # Resize disk (boolean)
 BRIDGE=virbr0                   # Hypervisor bridge
 PUBKEY=${HOME}/.ssh/id_rsa.pub  # SSH public key
-DISTRO=ubuntu1604                  # Distribution
+DISTRO="ubuntu"                 # Distribution
 MACADDRESS=                     # MAC Address
 
 if [ `id -u` -ne 0 ]; then
@@ -137,8 +137,8 @@ function fetch_images {
         centos7    ) QCOW=CentOS-7-x86_64-GenericCloud.qcow2 ;;
         centos6    ) QCOW=CentOS-6-x86_64-GenericCloud.qcow2 ;;
         debian8    ) QCOW=debian-8-openstack-amd64.qcow2 ;;
-        ubuntu1604 ) QCOW=ubuntu-16.04-server-cloudimg-amd64-disk1.img ;;
-        *          ) usage; exit 2 ;;
+        ubuntu ) QCOW=ubuntu-16.04-server-cloudimg-amd64-disk1.img ;;
+        *          ) echo "Distro ${DISTRO} not available"; exit 2 ;;
     esac
 
     mkdir -p ${IMAGEDIR}
@@ -173,7 +173,7 @@ function fetch_images {
             echo "$(date -R) Cloud image not found.  Downloading..."
             wget -P ${IMAGEDIR} ${DEBIAN8_URL}/${QCOW}
         fi
-    elif [ "${DISTRO}" == "ubuntu1604" ]
+    elif [ "${DISTRO}" == "ubuntu" ]
     then
         OS_VARIANT="ubuntuquantal"
         UBUNTU16_URL=https://cloud-images.ubuntu.com/releases/16.04/release/

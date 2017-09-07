@@ -1,0 +1,4 @@
+#!/bin/bash
+
+sudo docker run -i -t -p 8080:8080 -p 22:22 -v /home/boby/www/docker1:/www boby/vm1 /bin/bash
+

@@ -1,0 +1,8 @@
+#!/bin/bash
+
+mkdir ~/tmp-bs-manage
+cd ~/tmp-bs-manage
+rm -f bs_manage.*
+scp root@vm701n:/root/bs_manage.tar.gz .
+tar xf bs_manage.tar.gz
+mysql bs_manage < bs_manage.sql

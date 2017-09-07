@@ -1,0 +1,10 @@
+#!/usr/bin/python3
+
+import requests
+r = requests.get("http://checkip.amazonaws.com")
+
+if r.status_code == 200:
+    ip = r.text
+    ip = ip.strip()
+    print(ip)
+

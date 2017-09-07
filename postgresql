@@ -1,0 +1,9 @@
+#!/bin/bash
+
+if [ $1 == "start" ]; then
+    ~/programs/postgres/bin/pg_ctl -D ~/programs/postgres/data/ -l ~/programs/postgres/postgres.log start
+elif [ $1 == "stop" ]; then
+    ~/programs/postgres/bin/pg_ctl -D ~/programs/postgres/data/ -l ~/programs/postgres/postgres.log stop
+else
+    echo "Usage: postgresql [stop|start]"
+fi

@@ -1,0 +1,12 @@
+#!/bin/bash
+
+cd $HOME/work/
+rm -f myfiles.tar.gz myfiles.tar.gz.openssl
+tar --exclude='MY_FILES/.git' -zcvf myfiles.tar.gz MY_FILES
+openssl enc -aes-256-cbc -in /home/boby/work/myfiles.tar.gz -out myfiles.tar.gz.openssl
+
+echo "Backup available in folder $HOME/work"
+echo "You can decrypt file using"
+echo ""
+echo "openssl enc -d -aes-256-cbc -in myfiles.tar.gz.openssl -out myfiles.tar.gz"
+

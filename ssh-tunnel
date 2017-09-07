@@ -1,0 +1,6 @@
+#!/bin/bash
+
+/usr/bin/killall autossh
+#/usr/bin/autossh -M 20000 -f -N -p 3333 root@188.40.131.92 -D 7070
+/usr/bin/autossh -M 0 -o "ExitOnForwardFailure yes" -o "ServerAliveInterval 30" -o "ServerAliveCountMax 3" -f -N -p 3333 root@188.40.131.92 -D 7070
+

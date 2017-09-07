@@ -1,0 +1,14 @@
+#!/bin/bash
+
+#/usr/bin/truecrypt /dev/sdb3 /mnt/tmp
+
+if [ ! -d /mnt/tmp/dn ]; then
+    sudo cryptsetup luksOpen /dev/sda4 enfs1
+    sudo mount /dev/mapper/enfs1 /mnt/tmp
+    echo "mounted"
+else
+    sudo umount /mnt/tmp
+    sudo cryptsetup luksClose enfs1
+    echo "unmounted"
+fi
+

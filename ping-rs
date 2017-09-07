@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 # Created by: BizHat
 
 import os
@@ -27,8 +27,8 @@ def ping(hostname):
     except:
         return 0
     r = re.compile('rtt min/avg/max/mdev = [\d\.]*/([\d]*)\.')
-    f = r.findall(output)
-    return f[0]
+    f = r.findall(output.decode("utf-8"))
+    return int(f[0])
 
 if __name__ == "__main__":
 
@@ -42,4 +42,4 @@ if __name__ == "__main__":
     server_ping_sorted = sorted(server_ping.items(), key=lambda x:x[1], reverse=True)
 
     for world in server_ping_sorted:
-	print(world[0] + "\t" + world[1])
+        print(world[0] + "\t" + world[1])

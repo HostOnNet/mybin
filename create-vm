@@ -54,6 +54,7 @@ MEMORY=1024                     # Amount of RAM in MB
 DISK_SIZE=10                    # Disk Size in GB
 RESIZE_DISK=false               # Resize disk (boolean)
 IMAGEDIR=${HOME}/virt/images    # Directory to store images
+VMDIR=${HOME}/virt/vm
 BRIDGE=virbr0                   # Hypervisor bridge
 PUBKEY=${HOME}/.ssh/id_rsa.pub  # SSH public key
 DISTRO=ubuntu1604                  # Distribution
@@ -109,7 +110,7 @@ function delete_vm {
     virsh undefine ${VM} > /dev/null 2>&1
 
     echo "$(date -R) Deleting ${VM} files..."
-    rm -rf $IMAGEDIR/$VM
+    rm -rf $VMDIR/$VM
 }
 
 # Delete VM if -r is set
@@ -224,10 +225,10 @@ if [ "$?" -eq 0 ]; then
 fi
 
 # Start clean
-rm -rf ${IMAGEDIR}/${VMNAME}
-mkdir -p ${IMAGEDIR}/${VMNAME}
+rm -rf ${VMDIR}/${VMNAME}
+mkdir -p ${VMDIR}/${VMNAME}
 
-pushd ${IMAGEDIR}/${VMNAME} > /dev/null
+pushd ${VMDIR}/${VMNAME} > /dev/null
 
     # Create log file
     touch ${VMNAME}.log
@@ -304,7 +305,7 @@ _EOF_
     fi
     echo "      --os-type=linux \\"
     echo "      --os-variant=${OS_VARIANT} \\"
-    echo "      --graphics none \\"
+    echo "      --graphics vnc,listen=0.0.0.0 \\"
     echo "      --noautoconsole "
 
     if [ -z "${MACADDRESS}" ]
@@ -319,7 +320,7 @@ _EOF_
             --network bridge=${BRIDGE},model=virtio \
             --os-type=linux \
             --os-variant=${OS_VARIANT} \
-            --graphics none \
+            --graphics vnc,listen=0.0.0.0 \
             --noautoconsole
     else
         virt-install --import \
@@ -332,7 +333,7 @@ _EOF_
             --network bridge=${BRIDGE},model=virtio,mac=${MACADDRESS} \
             --os-type=linux \
             --os-variant=${OS_VARIANT} \
-            --graphics none \
+            --graphics vnc,listen=0.0.0.0 \
             --noautoconsole
     fi
 

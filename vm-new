@@ -2,7 +2,6 @@
 
 # https://raw.githubusercontent.com/giovtorres/kvm-install-vm/master/kvm-install-vm
 
-# Set program name variable
 prog=$0
 
 function usage {
@@ -12,7 +11,6 @@ function usage {
     echo "  -c          Number of vCPUs     (default: 1)"
     echo "  -f          CPU Model / Feature (default: host)"
     echo "  -m          Memory Size (MB)    (default: 1024)"
-    echo "  -d          Disk Size (GB)      (default: 10)"
     echo "  -t          Linux Distribution  (default: ubuntu)"
     echo "  -k          SSH Public Key      (default: $HOME/.ssh/id_rsa.pub)"
     echo "  -b          Bridge              (default: virbr0)"
@@ -50,8 +48,6 @@ OPTIND=1
 CPUS=1                          # Number of virtual CPUs
 FEATURE=host                    # Use host cpu features to the guest
 MEMORY=1024                     # Amount of RAM in MB
-DISK_SIZE=10                    # Disk Size in GB
-RESIZE_DISK=false               # Resize disk (boolean)
 BRIDGE=virbr0                   # Hypervisor bridge
 PUBKEY=${HOME}/.ssh/id_rsa.pub  # SSH public key
 DISTRO="ubuntu"                 # Distribution
@@ -82,14 +78,6 @@ while getopts ":c:f:m:d:t:k:b:n:r:i:M:h" opt; do
         i   ) IMAGE="${OPTARG}" ;;
         r   ) VMDEL="${OPTARG}" ;;
         M   ) MACADDRESS="${OPTARG}" ;;
-        d   )
-            if [ "${OPTARG}" -gt ${DISK_SIZE} ]; then
-                DISK_SIZE="${OPTARG}G"
-                RESIZE_DISK=true
-            else
-                DISK_SIZE="${DISK_SIZE}G"
-            fi
-            ;;
         h|* ) usage; exit 1 ;;
     esac
 done
@@ -105,17 +93,12 @@ fi
 
 function delete_vm {
     VM=$1
-    echo "$(date -R) Destroying ${VM} domain..."
     virsh destroy ${VM} > /dev/null 2>&1
-    echo "$(date -R) Destroying ${VM} storage pool..."
     virsh pool-destroy ${VM} > /dev/null 2>&1
-    echo "$(date -R) Undefining ${VM} storage pool..."
     virsh pool-undefine ${VM} > /dev/null 2>&1
-    echo "$(date -R) Undefining ${VM} domain..."
     virsh undefine ${VM} > /dev/null 2>&1
-
-    echo "$(date -R) Deleting ${VM} files..."
     rm -rf $VMDIR/$VM
+    echo "Deleted ${VM}"
 }
 
 # Delete VM if -r is set
@@ -146,43 +129,29 @@ function fetch_images {
     if [ "${DISTRO}" == "centos7" ]
     then
         OS_VARIANT="centos7.0"
-        CENTOS7_URL=https://cloud.centos.org/centos/7/images
+        ISO_URL=https://cloud.centos.org/centos/7/images
         LOGIN_USER=centos
-        if [ ! -f ${IMAGEDIR}/${QCOW} ]
-        then
-            echo "$(date -R) Cloud image not found.  Downloading..."
-            wget -P ${IMAGEDIR} ${CENTOS7_URL}/${QCOW}
-        fi
     elif [ "${DISTRO}" == "centos6" ]
     then
         OS_VARIANT="centos6.9"
-        CENTOS6_URL=https://cloud.centos.org/centos/6/images
+        ISO_URL=https://cloud.centos.org/centos/6/images
         LOGIN_USER=centos
-        if [ ! -f ${IMAGEDIR}/${QCOW} ]
-        then
-            echo "$(date -R) Cloud image not found.  Downloading..."
-            wget -P ${IMAGEDIR} ${CENTOS6_URL}/${QCOW}
-        fi
     elif [ "${DISTRO}" == "debian8" ]
     then
         OS_VARIANT="debian8"
-        DEBIAN8_URL=https://cdimage.debian.org/cdimage/openstack/current-8
+        ISO_URL=https://cdimage.debian.org/cdimage/openstack/current-8
         LOGIN_USER=debian
-        if [ ! -f ${IMAGEDIR}/${QCOW} ]
-        then
-            echo "$(date -R) Cloud image not found.  Downloading..."
-            wget -P ${IMAGEDIR} ${DEBIAN8_URL}/${QCOW}
-        fi
     elif [ "${DISTRO}" == "ubuntu" ]
     then
         OS_VARIANT="ubuntuquantal"
-        UBUNTU16_URL=https://cloud-images.ubuntu.com/releases/16.04/release/
+        ISO_URL=https://cloud-images.ubuntu.com/releases/16.04/release
         LOGIN_USER=ubuntu
-        if [ ! -f ${IMAGEDIR}/${QCOW} ]
-        then
-            echo "$(date -R) Cloud image not found.  Downloading..."
-            wget -P ${IMAGEDIR} ${UBUNTU16_URL}/${QCOW}
-        fi
+    fi
+
+    if [ ! -f ${IMAGEDIR}/${QCOW} ]
+    then
+        echo "wget -P ${IMAGEDIR} ${ISO_URL}/${QCOW}"
+        wget -P ${IMAGEDIR} ${UBUNTU16_URL}/${QCOW}
     fi
 
     IMAGE=${IMAGEDIR}/${QCOW}
@@ -191,29 +160,19 @@ function fetch_images {
 function check_ssh_key {
     if [ ! -f "${PUBKEY}" ]
     then
-        echo "$(date -R) [ERROR] Please generate an SSH keypair using 'ssh-keygen -t rsa' or specify one with the "-k" flag."
+        echo "[ERROR] Please generate an SSH keypair using 'ssh-keygen -t rsa' or specify one with the "-k" flag."
         exit 3
     else
         KEY=$(<${PUBKEY})
     fi
 }
 
-# cloud-init variables
 USER_DATA=user-data
 META_DATA=meta-data
 CI_ISO=${VMNAME}-cidata.iso
 
-# Call functions
 check_ssh_key
-
-if [ ! -z "${IMAGE+x}" ]
-then
-    echo "$(date -R) Using custom QCOW2 image: ${IMAGE}."
-    OS_VARIANT="auto"
-    LOGIN_USER="<use the default account in your custom image>"
-else
-    fetch_images
-fi
+fetch_images
 
 # Check if domain already exists
 virsh dominfo ${VMNAME} > /dev/null 2>&1
@@ -277,22 +236,31 @@ _EOF_
 
     echo "instance-id: ${VMNAME}; local-hostname: ${VMNAME}" > $META_DATA
 
-    echo "$(date -R) Copying cloud image ($(basename ${IMAGE}))..."
     DISK=${VMNAME}.qcow2
+    echo "cp ${IMAGE} ${DISK}"
     cp $IMAGE $DISK
-    if $RESIZE_DISK
-    then
-        echo "$(date -R) Resizing the disk to $DISK_SIZE..."
-        qemu-img create -f qcow2 -o preallocation=metadata $DISK.new $DISK_SIZE >> ${VMNAME}.log 2>&1
-        virt-resize --quiet --expand /dev/sda1 $DISK $DISK.new >> ${VMNAME}.log 2>&1
-        mv $DISK.new $DISK
+
+    echo "qemu-img create -f qcow2 -o preallocation=metadata ${DISK}.new 20G"
+    qemu-img create -f qcow2 -o preallocation=metadata $DISK.new 20G
+
+    # sudo apt install libguestfs-tools
+    # sudo update-guestfs-appliance
+    echo "virt-resize --expand /dev/sda1 ${DISK} ${DISK}.new"
+
+    if [ `id -u` -eq 0 ]; then
+        virt-resize --expand /dev/sda1 $DISK $DISK.new
+    else
+        sudo virt-resize --expand /dev/sda1 $DISK $DISK.new
     fi
 
-    # Create CD-ROM ISO with cloud-init config
-    echo "$(date -R) Generating ISO for cloud-init..."
-    genisoimage -output $CI_ISO -volid cidata -joliet -r $USER_DATA $META_DATA &>> ${VMNAME}.log
+    mv $DISK $DISK.backup
+    mv $DISK.new $DISK
 
-    echo "$(date -R) Installing the domain and adjusting the configuration..."
+    echo "genisoimage -output ${CI_ISO} -volid cidata -joliet -r ${USER_DATA} ${META_DATA}"
+
+    genisoimage -output $CI_ISO -volid cidata -joliet -r $USER_DATA $META_DATA
+
+    echo "Installing the domain and adjusting the configuration..."
     echo "[INFO] Installing with the following parameters:"
     echo "    virt-install \\"
     echo "      --import \\"
@@ -343,6 +311,7 @@ _EOF_
     fi
 
     RET=$?
+
     if [ "$RET" -ne 0 ]; then
         echo "[ERROR] virt-install failed."
         exit 3
@@ -352,6 +321,8 @@ _EOF_
     virsh change-media ${VMNAME} hda --eject --config >> ${VMNAME}.log
 
     MAC=$(virsh dumpxml ${VMNAME} | awk -F\' '/mac address/ {print $2}')
+
+    sleep 5
 
     while true
     do

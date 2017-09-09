@@ -2,23 +2,21 @@
 
 VMNAME=$1
 
+virsh dumpxml ${VMNAME} > /dev/null 2>&1
+
+if [ "$?" -ne 0 ]
+then
+    echo "VM not found: ${VMNAME}"
+    exit 1
+fi
+
 MAC=$(virsh dumpxml ${VMNAME} | awk -F\' '/mac address/ {print $2}')
 
-while true
-do
-    if [ -f /var/lib/libvirt/dnsmasq/default.leases ]; then
-       IP=$(grep -B1 $MAC /var/lib/libvirt/dnsmasq/default.leases | \
-          head -n 1 | awk '{print $3}' | sed -e s/\"//g -e s/,//)
-    else
-        IP=$(virsh net-dhcp-leases default | grep $MAC | awk '{print $5}' | awk -F "/" '{print $1}')
-    fi
-
-    if [ "$IP" = "" ]
-    then
-        sleep 1
-    else
-        break
-    fi
-done
+if [ -f /var/lib/libvirt/dnsmasq/default.leases ]; then
+   IP=$(grep -B1 $MAC /var/lib/libvirt/dnsmasq/default.leases | \
+      head -n 1 | awk '{print $3}' | sed -e s/\"//g -e s/,//)
+else
+    IP=$(virsh net-dhcp-leases default | grep $MAC | awk '{print $5}' | awk -F "/" '{print $1}')
+fi
 
 echo $IP

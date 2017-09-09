@@ -22,6 +22,13 @@ virsh pool-undefine ${VMNAME}
 echo "virsh undefine ${VMNAME}"
 virsh undefine ${VMNAME}
 
-rm -rf $VMDIR/$VM
+if [ "$(id -u)" -eq 0 ]
+then
+    rm -f /home/virt/vm/${VMNAME}/*
+    rmdir /home/virt/vm/${VMNAME}/
+else
+    rm -f $HOME/virt/vm/${VMNAME}/*
+    rmdir $HOME/virt/vm/${VMNAME}/
+fi
 
 echo "Virtual Machine deleted: ${VMNAME}"

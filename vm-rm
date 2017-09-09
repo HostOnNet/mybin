@@ -1,0 +1,27 @@
+#!/bin/bash
+
+VMNAME=$1
+
+virsh dumpxml ${VMNAME} > /dev/null 2>&1
+
+if [ "$?" -ne 0 ]
+then
+    echo "VM not found: ${VMNAME}"
+    exit 1
+fi
+
+echo "virsh destroy ${VMNAME}"
+virsh destroy ${VMNAME}
+
+echo "virsh pool-destroy ${VMNAME}"
+virsh pool-destroy ${VMNAME}
+
+echo "virsh pool-undefine ${VMNAME}"
+virsh pool-undefine ${VMNAME}
+
+echo "virsh undefine ${VMNAME}"
+virsh undefine ${VMNAME}
+
+rm -rf $VMDIR/$VM
+
+echo "Virtual Machine deleted: ${VMNAME}"

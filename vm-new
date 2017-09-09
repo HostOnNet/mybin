@@ -17,7 +17,6 @@ function usage {
     echo "  -h          Display help"
     echo "  -i          Custom QCOW2 Image"
     echo "  -n vmname   Name of VM to create"
-    echo "  -r vmname   Name of VM to delete"
     echo "  -M mac      Mac address         (default: None)"
     echo ""
     echo "DISTRIBUTIONS"
@@ -33,8 +32,6 @@ function usage {
     echo "Create VM with custom params:"
     echo "  $prog -c 2 -m 2048 -d 20 -n foo"
     echo ""
-    echo "Remove (destroy and undefine) a VM:"
-    echo "  $prog -r foo"
 }
 
 # Reset OPTIND
@@ -83,30 +80,6 @@ while getopts ":c:f:m:d:t:k:b:n:r:i:M:h" opt; do
 done
 
 shift $((OPTIND-1))
-
-# Can't specify both -n and -r together
-if [ ! -z "${VMNAME+x}" ] && [ ! -z "${VMDEL+x}" ]
-then
-    echo "-n and -r are mutually exclusive."
-    exit 2
-fi
-
-function delete_vm {
-    VM=$1
-    virsh destroy ${VM} > /dev/null 2>&1
-    virsh pool-destroy ${VM} > /dev/null 2>&1
-    virsh pool-undefine ${VM} > /dev/null 2>&1
-    virsh undefine ${VM} > /dev/null 2>&1
-    rm -rf $VMDIR/$VM
-    echo "Deleted ${VM}"
-}
-
-# Delete VM if -r is set
-if [ ! -z "${VMDEL+x}" ]
-then
-    delete_vm ${VMDEL}
-    exit 0
-fi
 
 # VMNAME must be set
 if [ -z "${VMNAME+x}" ]
@@ -174,21 +147,13 @@ CI_ISO=${VMNAME}-cidata.iso
 check_ssh_key
 fetch_images
 
-# Check if domain already exists
 virsh dominfo ${VMNAME} > /dev/null 2>&1
 
 if [ "$?" -eq 0 ]; then
-    echo -n "[WARNING] ${VMNAME} already exists.  "
-    read -p "Do you want to overwrite ${VMNAME} [y/N]? " -r
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        delete_vm ${VMNAME}
-    else
-        echo -e "\nNot overwriting ${VMNAME}. Exiting..."
-        exit 1
-    fi
+    echo -n "VM already exists. To delete, run vm-rm ${VMNAME}"
+    exit 1
 fi
 
-# Start clean
 rm -rf ${VMDIR}/${VMNAME}
 mkdir -p ${VMDIR}/${VMNAME}
 

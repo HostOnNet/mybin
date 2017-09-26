@@ -42,4 +42,4 @@ if __name__ == "__main__":
     server_ping_sorted = sorted(server_ping.items(), key=lambda x:x[1], reverse=True)
 
     for world in server_ping_sorted:
-        print(world[0] + "\t" + world[1])
+        print(world[0] + "\t" + str(world[1]))

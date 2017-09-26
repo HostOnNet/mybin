@@ -206,24 +206,31 @@ _EOF_
     cp $IMAGE $DISK
 
     echo "qemu-img create -f qcow2 -o preallocation=metadata ${DISK}.new 20G"
+    set -x
     qemu-img create -f qcow2 -o preallocation=metadata $DISK.new 20G
+    set +x
 
     # sudo apt install libguestfs-tools
     # sudo update-guestfs-appliance
-    echo "virt-resize --expand /dev/sda1 ${DISK} ${DISK}.new"
 
     if [ `id -u` -eq 0 ]; then
+        set -x
         virt-resize --expand /dev/sda1 $DISK $DISK.new
+        set +x
     else
+        set -x
         sudo virt-resize --expand /dev/sda1 $DISK $DISK.new
+        set +x
     fi
+
+    set -x
 
     mv $DISK $DISK.backup
     mv $DISK.new $DISK
 
-    echo "genisoimage -output ${CI_ISO} -volid cidata -joliet -r ${USER_DATA} ${META_DATA}"
-
     genisoimage -output $CI_ISO -volid cidata -joliet -r $USER_DATA $META_DATA
+
+    set +x
 
     echo "Installing the domain and adjusting the configuration..."
     echo "[INFO] Installing with the following parameters:"
@@ -248,6 +255,7 @@ _EOF_
 
     if [ -z "${MACADDRESS}" ]
     then
+        set -x
         virt-install --import \
             --name ${VMNAME} \
             --ram ${MEMORY} \
@@ -260,7 +268,9 @@ _EOF_
             --os-variant=${OS_VARIANT} \
             --graphics vnc,listen=0.0.0.0 \
             --noautoconsole
+        set +x
     else
+        set -x
         virt-install --import \
             --name ${VMNAME} \
             --ram ${MEMORY} \
@@ -273,14 +283,16 @@ _EOF_
             --os-variant=${OS_VARIANT} \
             --graphics vnc,listen=0.0.0.0 \
             --noautoconsole
+        set +x
     fi
-
+    
     RET=$?
 
     if [ "$RET" -ne 0 ]; then
         echo "[ERROR] virt-install failed."
         exit 3
     fi
+
     virsh dominfo ${VMNAME} >> ${VMNAME}.log 2>&1
 
     virsh change-media ${VMNAME} hda --eject --config >> ${VMNAME}.log

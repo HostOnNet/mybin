@@ -10,25 +10,30 @@ then
     exit 1
 fi
 
-echo "virsh destroy ${VMNAME}"
+set -x
+
 virsh destroy ${VMNAME}
 
-echo "virsh pool-destroy ${VMNAME}"
 virsh pool-destroy ${VMNAME}
 
-echo "virsh pool-undefine ${VMNAME}"
 virsh pool-undefine ${VMNAME}
 
-echo "virsh undefine ${VMNAME}"
 virsh undefine ${VMNAME}
+
+set +x
 
 if [ "$(id -u)" -eq 0 ]
 then
+    set -x
     rm -f /home/virt/vm/${VMNAME}/*
     rmdir /home/virt/vm/${VMNAME}/
+    set +x
 else
+    set -x
     rm -f $HOME/virt/vm/${VMNAME}/*
     rmdir $HOME/virt/vm/${VMNAME}/
+    set +x
 fi
+
 
 echo "Virtual Machine deleted: ${VMNAME}"
